@@ -1,0 +1,49 @@
+NUMPY
+
+Creare un Ndarray
+y = np.ones((Np,1), dtype=float)) --> vettore colonna di Np float valorizzati a 1
+y = np.zeros((1,Np), dtype=int) --> vettore riga di Np int valorizzati a 0
+A = np.eye(4) --> matrice identità 4x4
+y = np.array([1,2,3]) --> vettore con forma (3,) e valori 1,2,3
+A = np.array([1,2,3], [4,5,6]) --> matrice 2x3
+z = np.arange(5) --> z=[0,1,2,3,4] 5 elementi da 0 a 4
+z = np.arange(5,7,dtype=float) --> z=[5.0, 6.0]
+
+
+Dati 2 array A e B con le stesse dimensioni:
+    A+B è la somma degli array
+    A*B è la moltiplicazione 
+
+Dati 2 matrici A (N,M) e B (M,P):
+    A@B è la moltiplicazione tra le due matrici con dimensioni (N,P)
+    np.matmul(A,B) è equivalente
+    
+A Ndarray --> M,N=A.shape da la forma M righe e N colonne
+
+Se A (M1,N1) e (M2,N2) è un'altra possibilità tale che M2*N2 = M1*N1 allora 
+B = np.reshape(A, (M2,N2)) fornisce a B gli elementi di A e le dimensioni indicate
+
+Per copiare un Ndarray B=A.copy() o B = 1*A
+
+y = np.sort(x) --> ordina il vettore x in ordine crescente
+x.sort()
+n = np.argsort(x) --> restituisce gli indici di x ordinati
+n = np.where(x>2) --> restituisce gli indici dove x > 2
+
+
+per cambiare la forma del vettore:
+    a.shape(N,1) --> colonna
+    a.shape(1,N) --> riga
+    
+d = np.linalg.norm(x) --> d è la norma del 1D array x
+d = np.linalg.det(A) --> d è il determinante di A*B
+lam, U = np.linalg.eig(A) --> lam contiene gli autovalori della matrice A*B
+                              U contiene gli autovettori
+A = np.linalg.inv(B) --> A è l'inversa di B (AB = 1)
+
+
+np.random.seed(71) --> specificando un valore, genererà sempre la stessa serie di numeri casuali
+X = np.random.rand(M,N) --> genera la matrice MxN di valori casuali unif distribuita in [0,1)
+X = np.random.randn(M,N) --> genera la matrice MxN con distribuzione Gaussiana normalizzata
+X = np.random.randint(K, size=(M,N)) --> genera la matrice MxN con distribuzione uniforme
+np.random.shuffle(x) --> mescola casualmente i valori di x
