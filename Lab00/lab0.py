@@ -1,7 +1,7 @@
 import numpy as np
 from classes.SolveLLS import SolveLLS
 from classes.SolveGrad import SolveGrad
-
+from classes.SolveSteepDesc import SolveSteepDesc
 
 np.random.seed(104)
 
@@ -37,3 +37,11 @@ logx = 0
 logy = 0
 g_2.plot_what("Gradient Algorithm with epsilon")
 g_2.plot_err("Gradient Algorithm with epsilon: square error", logy, logx)
+
+
+steep = SolveSteepDesc(y,X)
+steep.run(Nit)
+logx = 0
+logy = 0
+steep.plot_what("Steepest Descent")
+steep.plot_err("Steepest Descent: square error", logy, logx)

@@ -52,7 +52,7 @@ class SolveGrad(SolveMinProbl):
                 print("Converged after ",i, " iterations.")
                 break
 
-    def plot_err(self, title, logy=0, logx=0):
+    def plot_err(self, title, logy, logx):
 
         err = self.err
         plt.figure()
@@ -62,7 +62,7 @@ class SolveGrad(SolveMinProbl):
         elif(logy==1 and logx==0):
             plt.semilogy(err[:,0], err[:,1])
         elif(logy==0 and logx==1):
-            plt.loglog(err[:,0], err[:,1])
+            plt.semilogx(err[:,0], err[:,1])
         elif(logy==1 and logx==1):
             plt.loglog(err[:,0], err[:,1])
 
