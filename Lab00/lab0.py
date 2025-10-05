@@ -21,6 +21,7 @@ gamma = 1e-5 # learning rate
 epsilon = 1e-6 # stopping condition
 max_iter=100000 # safe stopping condition
 
+# Gradient Algorithm using iteration as stopping condition
 g = SolveGrad(y,X)
 g.run(gamma, Nit)
 logx = 0
@@ -29,7 +30,7 @@ g.plot_what("Gradient Algorithm")
 g.plot_err("Gradient Algorithm: square error", logy, logx)
 
 
-
+# Gradient Algorithm using epsilon as stopping condition
 g_2 = SolveGrad(y,X)
 g_2.run2(gamma, epsilon, max_iter)
 logx = 0
