@@ -168,6 +168,7 @@ Xsh_norm = Xsh_norm.drop(['total_UPDRS', 'subject#'], axis=1)
 
 # MODULAR DROP
 Xsh_norm = Xsh_norm.drop(['Jitter:DDP', 'Shimmer:DDA'], axis=1)
+Xsh_norm = Xsh_norm.drop(['motor_UPDRS'], axis=1)
 
 
 # Get final list of regressor names
@@ -241,7 +242,7 @@ print("ALGORITHM 2: STEEPEST DESCENT (GRADIENT DESCENT)")
 print("=" * 80)
 
 # Maximum number of iterations to prevent infinite loops
-max_iterations = 300  # Adjust based on convergence behavior
+max_iterations = 10000  # Adjust based on convergence behavior
 
 # # Convergence threshold: stop when gradient norm is below this value
 # tolerance = 1e-6  # TODO: Adjust for faster/slower convergence

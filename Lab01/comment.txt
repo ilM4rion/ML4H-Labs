@@ -10,4 +10,5 @@ For the test set, SD has a higher density of error around the mean
 Not a gaussian distribution but there is not overfitting
 
 
-#
+# Dropping motor_UPDRS
+R^2 goes negative for DP and close to zero for LLS when the converge
