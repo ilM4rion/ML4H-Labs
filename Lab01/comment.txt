@@ -1,0 +1,13 @@
+Comments of the varius plots:
+
+# values Jitter:DDP and Shimmer:DDA dropped
+
+# Regression lines plots
+The value R^2 could be considered equal in both cases
+
+# Error distribution
+For the test set, SD has a higher density of error around the mean
+Not a gaussian distribution but there is not overfitting
+
+
+#

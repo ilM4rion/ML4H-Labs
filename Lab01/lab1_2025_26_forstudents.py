@@ -20,10 +20,14 @@ print("The original dataset shape  is ",X.shape)
 print("The number of distinct patients in the dataset is ",len(subj))
 print("the original dataset features are ",len(features))
 print(features)
-Np,Nc=X.shape# Np = number of rows/ptients Nc=number Nf of regressors + 1 (regressand total UPDRS is included)
+Np,Nc=X.shape# Np = number of rows/patients Nc=number Nf of regressors + 1 (regressand total UPDRS is included)
+
+
 #%% Have a look at the dataset
 print(X.describe().T) # gives the statistical description of the content of each column
 print(X.info())
+
+
 #%% Measure and show the covariance matrix
 Xnorm=(X-X.mean())/X.std()# normalized/standardized/scaled data
 c=Xnorm.cov()# note: xx.cov() gives a result that cannot be visually read
@@ -44,28 +48,43 @@ plt.title('Corr. coeff. between total_UPDRS and the other features')
 plt.tight_layout()
 plt.draw()
 plt.savefig('./UPDRS_corr_coeff.png') # save the figure
+
+
+
+
 #%% Shuffle the data (two out of many methods)
 # first method:
-np.random.seed(30) # set the seed for random shuffling
-# indexsh=np.arange(Np) # generate array [0,1,...,Np-1]
-# np.random.shuffle(indexsh) # shuffle the array
-# Xsh=X.copy()
-# Xsh=Xsh.set_axis(indexsh,axis=0,inplace=False) # shuffle accordingly the dataframe
-# Xsh=Xsh.sort_index(axis=0) # reset index of the dataframe
+np.random.seed(355074) # set the seed for random shuffling
+indexsh=np.arange(Np) # generate array [0,1,...,Np-1]
+np.random.shuffle(indexsh) # shuffle the array
+
+# Xsh is the shuffled version of X
+Xsh=X.copy()
+Xsh=Xsh.set_axis(indexsh,axis=0) # shuffle accordingly the dataframe
+Xsh=Xsh.sort_index(axis=0) # reset index of the dataframe
 # comment: Xsh.reset_index() exists, but a further index column would be created
+
 # second method
-Xsh=X.sample(frac=1, replace=False, random_state=30, axis=0, ignore_index=True)
+#Xsh=X.sample(frac=1, replace=False, random_state=30, axis=0, ignore_index=True)
 #Xsh=X.sample(frac=1, replace=False, axis=0, ignore_index=True)
 
+
+
+
+
 #%% Start working on training and test subsets
-Ntr=int(Np*0.5)  # number of training points
+Ntr=int(Np*0.5)  # number of training points (splits the dataset dimension in half)
 Nte=Np-Ntr   # number of test points
+
+
 #%% evaluate mean and st.dev. for the training data only
 X_tr=Xsh[0:Ntr]# dataframe that contains only the training data
-mm=X_tr.mean()# mean (series) of each feature
+mm=X_tr.mean()# mean (series) of each feature (=regressor + regressand)
 ss=X_tr.std()# standard deviation (series) of each feature
 my=mm['total_UPDRS']# mean of regressand/total UPDRS (for later use)
 sy=ss['total_UPDRS']# st.dev of regressand/total UPDRS (for later use)
+
+
 #%% Generate the normalized/scaled training and test datasets, remove unwanted regressors
 Xsh_norm=(Xsh-mm)/ss# normalized data
 ysh_norm=Xsh_norm['total_UPDRS']# regressand only
@@ -81,6 +100,11 @@ X_te_norm=Xsh_norm[Ntr:] # regressors for test phase
 y_tr_norm=ysh_norm[0:Ntr] # regressand for training phase
 y_te_norm=ysh_norm[Ntr:] #regressand for test phase
 print(X_tr_norm.shape,X_te_norm.shape)
+
+
+
+
+
 #%% LLS regression
 w_hat=np.linalg.inv(X_tr_norm.T@X_tr_norm)@(X_tr_norm.T@y_tr_norm)
 y_hat_tr_norm=X_tr_norm@w_hat
