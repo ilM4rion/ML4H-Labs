@@ -5,7 +5,7 @@ class SolveMinProbl:
     def __init__(self, y=np.ones((3,)), X=np.eye(3)): # X matrice identità 3x3
         self.matr = X #matric X (known)
         self.y = y # column vector y (know)
-        self.Np = y.shape[0] # number of rows
+        self.Np = X.shape[0] # number of rows
         self.Nf = X.shape[1] # number of columns
         self.w_hat = np.zeros((self.Nf, 1), dtype=float) # column vector w_hat to be found
         self.min = 0 # square norm of the error
