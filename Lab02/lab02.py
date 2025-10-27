@@ -101,17 +101,17 @@ print(f"True Training samples: {Ntt} ({Ntt/Np*100:.1f}%)")
 print(f"Validation samples: {Nva} ({Nva/Np*100:.1f}%)")
 print(f"Test samples: {Nte} ({Nte/Np*100:.1f}%)")
 
-# =============================================================================
-# COMPUTE NORMALIZATION PARAMETERS FROM TRUE TRAINING DATA ONLY
-# =============================================================================
+# ==========================================================================================
+# COMPUTE NORMALIZATION PARAMETERS FROM TRUE TRAINING DATA ONLY (DATA PREPARATION - POINT 4)
+# ==========================================================================================
 # Important: We only use training data statistics to avoid data leakage
 
 # Extract training subset
-X_tt = Xsh[0:Ntt]
+X_train = Xsh[0:Ntt]
 
 # Compute mean and standard deviation for each feature (training data only)
-mm = X_tt.mean()  # Mean of each column
-ss = X_tt.std()   # Standard deviation of each column
+mm = X_train.mean()  # Mean of each column
+ss = X_train.std()   # Standard deviation of each column
 
 # Store target variable (total_UPDRS) statistics separately
 my = mm['total_UPDRS']  # Mean of target variable
@@ -150,17 +150,17 @@ Xsh_norm = Xsh_norm.values  # Feature matrix
 ysh_norm = ysh_norm.values  # Target vector
 
 # Split normalized data into training, validation and test sets
-X_tt_norm = Xsh_norm[0:Ntt]      # True Training features
-X_va_norm = Xsh_norm[Ntt:Ntr]    # Validation features
-X_te_norm = Xsh_norm[Ntr:]       # Test features
+X_train_norm = Xsh_norm[0:Ntt]      # True Training features
+X_val_norm = Xsh_norm[Ntt:Ntr]    # Validation features
+X_test_norm = Xsh_norm[Ntr:]       # Test features
 
-y_tt_norm = ysh_norm[0:Ntt]      # True Training target   
-y_va_norm = ysh_norm[Ntt:Ntr]    # Validation target
-y_te_norm = ysh_norm[Ntr:]       # Test target
+y_train_norm = ysh_norm[0:Ntt]      # True Training target   
+y_val_norm = ysh_norm[Ntt:Ntr]    # Validation target
+y_test_norm = ysh_norm[Ntr:]       # Test target
 
 
 print(f"\nNormalized data shapes:")
-print(f"X_tt_norm: {X_tt_norm.shape}, X_va_norm: {X_va_norm.shape}, X_te_norm: {X_te_norm.shape}")
+print(f"X_train_norm: {X_train_norm.shape}, X_val_norm: {X_val_norm.shape}, X_test_norm: {X_test_norm.shape}")
 
 # =============================================================================
 # ALGORITHM: LINEAR LEAST SQUARES (LLS) REGRESSION
@@ -174,37 +174,37 @@ print("LINEAR LEAST SQUARES (LLS) REGRESSION")
 print("=" * 80)
 
 # Compute optimal weight vector using closed-form solution on TRUE TRAINING data
-w_hat_lls = np.linalg.inv(X_tt_norm.T @ X_tt_norm) @ (X_tt_norm.T @ y_tt_norm)
+w_hat_lls = np.linalg.inv(X_train_norm.T @ X_train_norm) @ (X_train_norm.T @ y_train_norm)
 
 # Make predictions on all sets (normalized)
-y_hat_tt_norm_lls = X_tt_norm @ w_hat_lls  # True training predictions
-y_hat_va_norm_lls = X_va_norm @ w_hat_lls  # Validation predictions
-y_hat_te_norm_lls = X_te_norm @ w_hat_lls  # Test predictions
+y_hat_train_norm_lls = X_train_norm @ w_hat_lls  # True training predictions
+y_hat_val_norm_lls = X_val_norm @ w_hat_lls  # Validation predictions
+y_hat_test_norm_lls = X_test_norm @ w_hat_lls  # Test predictions
 
 # De-normalize predictions and targets (convert back to original scale)
-y_tt = y_tt_norm * sy + my                    # True training values
-y_va = y_va_norm * sy + my                    # Validation values
-y_te = y_te_norm * sy + my                    # Test values
-y_hat_tt_lls = y_hat_tt_norm_lls * sy + my   # Predicted true training values
-y_hat_va_lls = y_hat_va_norm_lls * sy + my   # Predicted validation values
-y_hat_te_lls = y_hat_te_norm_lls * sy + my   # Predicted test values
+y_train = y_train_norm * sy + my                    # True training values
+y_val = y_val_norm * sy + my                        # Validation values
+y_test = y_test_norm * sy + my                      # Test values
+y_hat_train_lls = y_hat_train_norm_lls * sy + my   # Predicted true training values
+y_hat_val_lls = y_hat_val_norm_lls * sy + my       # Predicted validation values
+y_hat_test_lls = y_hat_test_norm_lls * sy + my     # Predicted test values
 
 # Compute errors
-E_tt_lls = y_tt - y_hat_tt_lls  # True training errors
-E_va_lls = y_va - y_hat_va_lls  # Validation errors
-E_te_lls = y_te - y_hat_te_lls  # Test errors
+E_train_lls = y_train - y_hat_train_lls  # True training errors
+E_val_lls = y_val - y_hat_val_lls        # Validation errors
+E_test_lls = y_test - y_hat_test_lls     # Test errors
 
 # Compute performance metrics
-E_tt_MSE_lls = np.mean(E_tt_lls**2)
-R2_tt_lls = 1 - E_tt_MSE_lls / np.var(y_tt)
-E_va_MSE_lls = np.mean(E_va_lls**2)
-R2_va_lls = 1 - E_va_MSE_lls / np.var(y_va)
-E_te_MSE_lls = np.mean(E_te_lls**2)
-R2_te_lls = 1 - E_te_MSE_lls / np.var(y_te)
+E_train_MSE_lls = np.mean(E_train_lls**2)
+R2_train_lls = 1 - E_train_MSE_lls / np.var(y_train)
+E_val_MSE_lls = np.mean(E_val_lls**2)
+R2_val_lls = 1 - E_val_MSE_lls / np.var(y_val)
+E_test_MSE_lls = np.mean(E_test_lls**2)
+R2_test_lls = 1 - E_test_MSE_lls / np.var(y_test)
 
-print(f"True Training MSE: {E_tt_MSE_lls:.3f}, R²: {R2_tt_lls:.3f}")
-print(f"Validation MSE: {E_va_MSE_lls:.3f}, R²: {R2_va_lls:.3f}")
-print(f"Test MSE: {E_te_MSE_lls:.3f}, R²: {R2_te_lls:.3f}")
+print(f"True Training MSE: {E_train_MSE_lls:.3f}, R²: {R2_train_lls:.3f}")
+print(f"Validation MSE: {E_val_MSE_lls:.3f}, R²: {R2_val_lls:.3f}")
+print(f"Test MSE: {E_test_MSE_lls:.3f}, R²: {R2_test_lls:.3f}")
 
 # =============================================================================
 # VISUALIZE LEARNED WEIGHTS
@@ -230,28 +230,28 @@ plt.draw()
 # =============================================================================
 
 # Determine common bin edges
-M = np.max([np.max(E_tt_lls), np.max(E_va_lls), np.max(E_te_lls)])
-m = np.min([np.min(E_tt_lls), np.min(E_va_lls), np.min(E_te_lls)])
+M = np.max([np.max(E_train_lls), np.max(E_val_lls), np.max(E_test_lls)])
+m = np.min([np.min(E_train_lls), np.min(E_val_lls), np.min(E_test_lls)])
 common_bins = np.linspace(m, M, 51)
 
 fig, axes = plt.subplots(1, 3, figsize=(18, 5))
 
 # True training errors
-axes[0].hist(E_tt_lls, bins=common_bins, density=True, alpha=0.7, color='blue')
+axes[0].hist(E_train_lls, bins=common_bins, density=True, alpha=0.7, color='blue')
 axes[0].set_xlabel(r'$e = y - \hat{y}$ (Prediction Error)', fontsize=11)
 axes[0].set_ylabel('Probability Density', fontsize=11)
 axes[0].set_title('True Training Error Distribution', fontsize=12)
 axes[0].grid(alpha=0.3)
 
 # Validation errors
-axes[1].hist(E_va_lls, bins=common_bins, density=True, alpha=0.7, color='green')
+axes[1].hist(E_val_lls, bins=common_bins, density=True, alpha=0.7, color='green')
 axes[1].set_xlabel(r'$e = y - \hat{y}$ (Prediction Error)', fontsize=11)
 axes[1].set_ylabel('Probability Density', fontsize=11)
 axes[1].set_title('Validation Error Distribution', fontsize=12)
 axes[1].grid(alpha=0.3)
 
 # Test errors
-axes[2].hist(E_te_lls, bins=common_bins, density=True, alpha=0.7, color='orange')
+axes[2].hist(E_test_lls, bins=common_bins, density=True, alpha=0.7, color='orange')
 axes[2].set_xlabel(r'$e = y - \hat{y}$ (Prediction Error)', fontsize=11)
 axes[2].set_ylabel('Probability Density', fontsize=11)
 axes[2].set_title('Test Error Distribution', fontsize=12)
@@ -268,34 +268,34 @@ plt.draw()
 fig, axes = plt.subplots(1, 3, figsize=(18, 6))
 
 # True training predictions
-axes[0].plot(y_tt, y_hat_tt_lls, 'o', alpha=0.5, label='LLS predictions')
+axes[0].plot(y_train, y_hat_train_lls, 'o', alpha=0.5, label='LLS predictions')
 v = axes[0].axis()
 axes[0].plot([v[0], v[1]], [v[0], v[1]], 'r-', linewidth=2, label='Perfect prediction')
 axes[0].set_xlabel(r'True Total UPDRS ($y$)', fontsize=11)
 axes[0].set_ylabel(r'Predicted Total UPDRS ($\hat{y}$)', fontsize=11)
-axes[0].set_title(f'True Training Set (R²={R2_tt_lls:.3f})', fontsize=12)
+axes[0].set_title(f'True Training Set (R²={R2_train_lls:.3f})', fontsize=12)
 axes[0].legend(fontsize=10)
 axes[0].grid(alpha=0.3)
 axes[0].axis('square')
 
 # Validation predictions
-axes[1].plot(y_va, y_hat_va_lls, 'o', alpha=0.5, label='LLS predictions', color='green')
+axes[1].plot(y_val, y_hat_val_lls, 'o', alpha=0.5, label='LLS predictions', color='green')
 v = axes[1].axis()
 axes[1].plot([v[0], v[1]], [v[0], v[1]], 'r-', linewidth=2, label='Perfect prediction')
 axes[1].set_xlabel(r'True Total UPDRS ($y$)', fontsize=11)
 axes[1].set_ylabel(r'Predicted Total UPDRS ($\hat{y}$)', fontsize=11)
-axes[1].set_title(f'Validation Set (R²={R2_va_lls:.3f})', fontsize=12)
+axes[1].set_title(f'Validation Set (R²={R2_val_lls:.3f})', fontsize=12)
 axes[1].legend(fontsize=10)
 axes[1].grid(alpha=0.3)
 axes[1].axis('square')
 
 # Test predictions
-axes[2].plot(y_te, y_hat_te_lls, 'o', alpha=0.5, label='LLS predictions', color='orange')
+axes[2].plot(y_test, y_hat_test_lls, 'o', alpha=0.5, label='LLS predictions', color='orange')
 v = axes[2].axis()
 axes[2].plot([v[0], v[1]], [v[0], v[1]], 'r-', linewidth=2, label='Perfect prediction')
 axes[2].set_xlabel(r'True Total UPDRS ($y$)', fontsize=11)
 axes[2].set_ylabel(r'Predicted Total UPDRS ($\hat{y}$)', fontsize=11)
-axes[2].set_title(f'Test Set (R²={R2_te_lls:.3f})', fontsize=12)
+axes[2].set_title(f'Test Set (R²={R2_test_lls:.3f})', fontsize=12)
 axes[2].legend(fontsize=10)
 axes[2].grid(alpha=0.3)
 axes[2].axis('square')
@@ -311,9 +311,9 @@ plt.draw()
 cols = ['MSE', 'R²']
 rows = ['True Training', 'Validation', 'Test']
 performance = pd.DataFrame([
-    [E_tt_MSE_lls, R2_tt_lls],
-    [E_va_MSE_lls, R2_va_lls],
-    [E_te_MSE_lls, R2_te_lls]
+    [E_train_MSE_lls, R2_train_lls],
+    [E_val_MSE_lls, R2_val_lls],
+    [E_test_MSE_lls, R2_test_lls]
 ], columns=cols, index=rows)
 
 print("\n" + "=" * 80)
