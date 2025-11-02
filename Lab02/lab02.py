@@ -83,7 +83,7 @@ print(X.info())
 # Set random seed for reproducibility
 # Using the same seed will always produce the same shuffle
 np.random.seed(355074)
-
+# np.random.seed(361144)
 # Create array of indices [0, 1, 2, ..., Np-1]
 # Shape: (Np,)
 indexsh = np.arange(Np)
@@ -106,6 +106,7 @@ Xsh = Xsh.sort_index(axis=0)  # Sort by index to reset row numbers 0, 1, 2, ...
 # This prevents data leakage and allows proper hyperparameter tuning
 
 # Calculate number of samples for each split
+
 Ntr = int(Np * 0.6)      # Total training pool: 60% of data
 Ntt = int(Ntr * (2/3))   # True training set: 2/3 of training pool = 40% of total data
 Nva = Ntr - Ntt          # Validation set: 1/3 of training pool = 20% of total data
@@ -200,6 +201,13 @@ print("\n" + "=" * 80)
 print("K-NEAREST NEIGHBORS WITH LOCAL LINEAR LEAST SQUARES")
 print("=" * 80)
 
+# Scope of this function is to regress localli over the real values (see image of the lab with blue lines and red one)
+# For each validation point, we find K nearest neighbors in the training set,
+# fit a local linear model using only those K neighbors, and use that model to predict the target value for that specific point.
+
+# The best K is the value that makes the line adapt better to the dot-like line (see image)
+# the best K is the value with the lowest MSE
+
 def knn_lls_predict(X_train, y_train, X_val, K, epsilon=1e-8):
     """
     Predict using K-Nearest Neighbors with Local Linear Least Squares.
@@ -229,7 +237,7 @@ def knn_lls_predict(X_train, y_train, X_val, K, epsilon=1e-8):
         Number of nearest neighbors to use for local regression
         Must satisfy: K >= Nf for matrix invertibility (without regularization)
     epsilon : float, default=1e-8
-        Ridge regularization parameter (added to diagonal of A^T A)
+        Regularization parameter (added to diagonal of A^T A)
         Ensures matrix is always invertible even when K < Nf
         Prevents numerical instability when features are collinear
     
@@ -256,6 +264,11 @@ def knn_lls_predict(X_train, y_train, X_val, K, epsilon=1e-8):
     # Loop over each validation point
     # Each point gets its own local model
     for i, x in enumerate(X_val):
+
+        ################
+        #   KNN PART   #
+        ################
+
         # x is a single validation point
         # Shape: (Nf,) - row vector of features
         
@@ -274,10 +287,18 @@ def knn_lls_predict(X_train, y_train, X_val, K, epsilon=1e-8):
         # Shape: (K,) - indices of K nearest training points
         k_indices = np.argsort(squared_distances)[:K]
         
+
+
+
+
+        ################
+        #   LLS PART   #
+        ################
+
         # STEP 1.3: Extract K nearest neighbors and their targets
         # Create local feature matrix A using only K nearest neighbors
         # Shape: (K, Nf)
-        A = X_train[k_indices]
+        A = X_train[k_indices] # Matrix X in theory notes (see LLS in lab00)
         
         # Create local target vector y using only K nearest neighbors
         # Shape: (K,)
@@ -290,7 +311,7 @@ def knn_lls_predict(X_train, y_train, X_val, K, epsilon=1e-8):
         # COURSE NOTE: 
         # w_hat = (X^T*X)^(-1)*(X^T*y)
 
-        # where ε is a small regularization parameter
+        # ε is a small regularization parameter
         
         # Compute Gram matrix: A^T @ A
         # Shape: (Nf, Nf) - square matrix
@@ -371,26 +392,19 @@ print(f"  Validation MSE: {E_val_MSE_knn_lls:.3f}")
 # Hyperparameter tuning: search for K that minimizes validation MSE
 # This is model selection using the validation set
 
-print("\n" + "-" * 80)
-print("STEP 2-5: Finding Optimal K Value")
-print("-" * 80)
 
 # Define search space for K (hyperparameter range)
-Kmin = 1    # Minimum K to test (1 nearest neighbor)
-Kmax = 200   # Maximum K to test (200 nearest neighbors)
+Kmin = 60   # Minimum K to test (60 nearest neighbors)
+Kmax = 300   # Maximum K to test (300 nearest neighbors)
 K_step = 1  # Step size for K values (test every integer)
 
 # Create array of K values to test
-# Shape: (200,) - [1, 2, 3, ..., 200]
+# Shape: (241,) - [60, 61, 62, ..., 300]
 K_values = np.arange(Kmin, Kmax + 1, K_step)
 
 # Initialize list to store validation MSE for each K
-# Will become array of shape: (200,)
+# Will become array of shape: (241,)
 val_mse_values = []
-
-print(f"\nTesting K values from {Kmin} to {Kmax} with step {K_step}")
-print("\nK\tValidation MSE")
-print("-" * 30)
 
 # Loop over each K value to evaluate performance
 for K in K_values:
@@ -408,11 +422,6 @@ for K in K_values:
     
     # Store MSE in list
     val_mse_values.append(mse)
-    
-    # Print results for selected K values to monitor progress
-    # Print K=1 to K=10, then every 5th value
-    if K <= 10 or K % 5 == 0:
-        print(f"{K}\t{mse:.3f}")
 
 # Convert list to NumPy array for easier manipulation
 # Shape: (200,)
@@ -426,9 +435,17 @@ best_k_idx = np.argmin(val_mse_values)
 K_opt = K_values[best_k_idx]  # Scalar - K value with lowest validation MSE
 best_mse = val_mse_values[best_k_idx]  # Scalar - minimum validation MSE
 
+# Find K with highest MSE for comparison
+worst_k_idx = np.argmax(val_mse_values)  # Scalar - index of maximum MSE
+K_worst = K_values[worst_k_idx]  # Scalar - K value with highest validation MSE
+worst_mse = val_mse_values[worst_k_idx]  # Scalar - maximum validation MSE
+
 print("\n" + "=" * 80)
 print(f"OPTIMAL K VALUE: {K_opt}")
 print(f"MINIMUM VALIDATION MSE: {best_mse:.3f}")
+print("-" * 80)
+print(f"WORST K VALUE: {K_worst}")
+print(f"MAXIMUM VALIDATION MSE: {worst_mse:.3f}")
 print("=" * 80)
 
 # =============================================================================
@@ -471,7 +488,7 @@ plt.savefig('./pictures/k_vs_mse_knn_lls.png', dpi=300)
 plt.show()
 
 # =============================================================================
-# EVALUATE FINAL MODEL WITH OPTIMAL K
+# FINAL MODEL EVALUATION WITH OPTIMAL K
 # =============================================================================
 # After finding optimal K, evaluate performance on all three datasets
 # This gives final assessment of model quality
@@ -480,6 +497,9 @@ print("\n" + "=" * 80)
 print(f"FINAL MODEL EVALUATION WITH K_opt = {K_opt}")
 print("=" * 80)
 
+# =============================================================================
+# POINT 1: TEST PHASE WITH K-NN LOCAL LLS (K = K_opt)
+# =============================================================================
 # Make predictions on all three sets using optimal K
 
 # Training set predictions (to check for overfitting)
@@ -506,95 +526,274 @@ y_hat_train_final = y_hat_train_norm_final * sy + my  # Shape: (Ntt,)
 y_hat_val_final = y_hat_val_norm_final * sy + my      # Shape: (Nva,)
 y_hat_test_final = y_hat_test_norm_final * sy + my    # Shape: (Nte,)
 
-# Compute prediction errors (residuals) for each set
+# Compute ESTIMATION errors for each set 
 E_train_final = y_train - y_hat_train_final  # Shape: (Ntt,)
 E_val_final = y_val - y_hat_val_final        # Shape: (Nva,)
 E_test_final = y_test - y_hat_test_final     # Shape: (Nte,)
 
-# Compute Mean Squared Error for each set
-E_train_MSE_final = np.mean(E_train_final**2)  # Scalar
-E_val_MSE_final = np.mean(E_val_final**2)      # Scalar
-E_test_MSE_final = np.mean(E_test_final**2)    # Scalar
+# =============================================================================
+# POINT 2: DETAILED STATISTICS FOR TEST SET (K-NN LOCAL LLS)
+# =============================================================================
+# Compute comprehensive error statistics for the test set
 
-# Compute R² (coefficient of determination) for each set
-R2_train_final = 1 - E_train_MSE_final / np.var(y_train)  # Scalar
-R2_val_final = 1 - E_val_MSE_final / np.var(y_val)        # Scalar
-R2_test_final = 1 - E_test_MSE_final / np.var(y_test)     # Scalar
+# Basic error statistics
+# This shows if there's systematic bias (should be close to 0)
+mean_error = np.mean(E_test_final)
+print(f"\nTEST SET ERROR STATISTICS (K-NN Local LLS with K={K_opt}):")
+print(f"Mean Error: {mean_error:.3f}")
 
-# Create performance summary table using Pandas DataFrame
-cols = ['MSE', 'R²']
-rows = ['Training', 'Validation', 'Test']
-performance_knn_lls = pd.DataFrame([
-    [E_train_MSE_final, R2_train_final],
-    [E_val_MSE_final, R2_val_final],
-    [E_test_MSE_final, R2_test_final]
-], columns=cols, index=rows)
-# Shape: (3, 2) DataFrame
 
-# Display performance summary
-print("\nPERFORMANCE SUMMARY - K-NN WITH LOCAL LLS (K_opt = {})".format(K_opt))
+# This measures the spread/variability of prediction errors
+std_error = np.std(E_test_final)
+print(f"Standard Deviation of Errors: {std_error:.3f}")
+
+# MSE = average of squared errors (penalizes large errors more)
+mse = np.mean(E_test_final**2)
+print(f"Mean Squared Error (MSE): {mse:.3f}")
+
+
+# RMSE is in the same units as the target variable
+rmse = np.sqrt(mse)
+print(f"Root Mean Squared Error (RMSE): {rmse:.3f}")
+
+# Correlation and determination coefficients
+corr_coef = np.corrcoef(y_test, y_hat_test_final)[0, 1]
+print(f"Correlation Coefficient: {corr_coef:.3f}")
+
+
+# R^2 = 1 -[MSE / np.var(y_test)]
+# Measures proportion of variance explained by the model
+# Range: (-∞, 1], where 1 = perfect predictions
+r_squared = 1 - mse / np.var(y_test)
+print(f"R² (Coefficient of Determination): {r_squared:.3f}")
+
+# Regression line for predicted vs true values
+# Fit linear regression: predicted = a * true + b
+# Perfect predictions would give slope=1, intercept=0
+slope, intercept = np.polyfit(y_test, y_hat_test_final, 1)
+print(f"Regression Line: slope = {slope:.3f}, intercept = {intercept:.3f}")
+
+# =============================================================================
+# POINT 3: STANDARD LLS REGRESSION (GLOBAL MODEL FROM LAB 1)
+# =============================================================================
+# Implement standard Linear Least Squares using ALL training data
+# This serves as a baseline to compare against K-NN Local LLS
+
+
+#  w_hat = (X^T X)^(-1) X^T y
+# Shape: (Nf,) - one weight per feature
+# Use standard LLS and use dataset used for traning without the validation set splitted
+X_train_norm_lls = Xsh_norm[0:Ntr]      # Shape: (Ntr, Nf) - Training features (including validation set)
+y_train_norm_lls = ysh_norm[0:Ntr]      # Shape: (Ntr,) - Training targets (including validation set)
+
+X_test_norm_lls = Xsh_norm[Ntr:]        # Shape: (Nte, Nf) - Test features
+y_test_norm_lls = ysh_norm[Ntr:]        # Shape: (Nte,) - Test targets
+
+w_hat_lls = np.linalg.inv(X_train_norm_lls.T @ X_train_norm_lls) @ (X_train_norm_lls.T @ y_train_norm_lls)
+
+# Compute predictions on test set
+# Shape: (Nte,)
+y_hat_test_norm_lls = X_test_norm_lls @ w_hat_lls
+
+# De-normalize LLS test predictions back to original scale
+# Shape: (Nte,)
+y_hat_test_lls = y_hat_test_norm_lls * sy + my
+
+mean_error_lls = np.mean(y_test - y_hat_test_lls)
+std_error_lls = np.std(y_test - y_hat_test_lls)
+error_lls = y_test - y_hat_test_lls
+mse_lls = np.mean(error_lls**2)
+corr_coef_lls = np.corrcoef(y_test, y_hat_test_lls)[0, 1]
+R2_lls = 1 - mse_lls / np.var(y_test)
+
+# Compute regression line parameters for LLS
+slope_lls, intercept_lls = np.polyfit(y_test, y_hat_test_lls, 1)
+
+# =============================================================================
+# COMPARISON: K-NN LOCAL LLS vs STANDARD LLS
+# =============================================================================
+
+# =============================================================================
+# CREATE COMPARISON TABLE USING PANDAS DATAFRAME
+# =============================================================================
+comparison_data = {
+    'K-NN Local LLS': [
+        mean_error,
+        std_error,
+        mse,
+        rmse,
+        corr_coef,
+        r_squared,
+        slope,
+        intercept
+    ],
+    'Standard LLS': [
+        mean_error_lls,
+        std_error_lls,
+        mse_lls,
+        np.sqrt(mse_lls),
+        corr_coef_lls,
+        R2_lls,
+        slope_lls,
+        intercept_lls
+    ]
+}
+
+comparison_index = [
+    'Mean Error',
+    'Std Dev Error',
+    'MSE',
+    'RMSE',
+    'Correlation',
+    'R²',
+    'Slope',
+    'Intercept'
+]
+
+comparison_df = pd.DataFrame(comparison_data, index=comparison_index)
+comparison_df['Difference'] = comparison_df['K-NN Local LLS'] - comparison_df['Standard LLS']
+
+print("\n" + "=" * 80)
+print("COMPARISON: K-NN LOCAL LLS vs STANDARD LLS")
 print("=" * 80)
-print(performance_knn_lls)
+print(comparison_df)
 print("=" * 80)
 
 # =============================================================================
-# VISUALIZE PREDICTIONS: TRUE vs PREDICTED (OPTIMAL K)
+# VISUALIZATION: SIDE-BY-SIDE ERROR HISTOGRAMS
 # =============================================================================
-# Create scatter plots to visualize prediction quality
-# Good predictions should lie close to the diagonal line (y = y_hat)
+# Compare error distributions for both methods
 
-# Create figure with 3 subplots (one for each dataset)
-fig, axes = plt.subplots(1, 3, figsize=(18, 6))
+# Use common bins for fair comparison
+m = min(np.min(E_test_final), np.min(error_lls))
+M = max(np.max(E_test_final), np.max(error_lls))
+common_bins = np.linspace(m, M, 51)
 
-# --- Training Set Plot ---
-# Scatter plot: each point is (true_value, predicted_value)
-axes[0].plot(y_train, y_hat_train_final, 'o', alpha=0.5, label='K-NN LLS predictions')
+fig, axes = plt.subplots(1, 2, figsize=(16, 6))
 
-# Get current axis limits
+# K-NN Local LLS histogram
+axes[0].hist(E_test_final, bins=common_bins, density=True, alpha=0.75, 
+             color='tab:blue', edgecolor='k', label='K-NN Local LLS')
+axes[0].axvline(mean_error, color='r', linestyle='--', linewidth=2, 
+                label=f"Mean = {mean_error:.2f}")
+axes[0].set_title(f"K-NN Local LLS (K={K_opt})\nMSE={mse:.3f}, R²={r_squared:.3f}", fontsize=12)
+axes[0].set_xlabel("e = y - ŷ", fontsize=11)
+axes[0].set_ylabel("Probability Density", fontsize=11)
+axes[0].grid(alpha=0.3)
+axes[0].legend(fontsize=10)
+
+# Standard LLS histogram
+axes[1].hist(error_lls, bins=common_bins, density=True, alpha=0.75, 
+             color='tab:orange', edgecolor='k', label='Standard LLS')
+axes[1].axvline(mean_error_lls, color='r', linestyle='--', linewidth=2, 
+                label=f"Mean = {mean_error_lls:.2f}")
+axes[1].set_title(f"Standard LLS\nMSE={mse_lls:.3f}, R²={R2_lls:.3f}", fontsize=12)
+axes[1].set_xlabel("e = y - ŷ", fontsize=11)
+axes[1].set_ylabel("Probability Density", fontsize=11)
+axes[1].grid(alpha=0.3)
+axes[1].legend(fontsize=10)
+
+plt.tight_layout()
+plt.savefig('./pictures/error_histograms_comparison.png', dpi=300)
+
+# =============================================================================
+# VISUALIZATION: SIDE-BY-SIDE PREDICTION SCATTER PLOTS
+# =============================================================================
+
+fig, axes = plt.subplots(1, 2, figsize=(16, 7))
+
+axes[0].scatter(y_test, y_hat_test_final, alpha=0.5, s=30, 
+                label='Predictions', color='tab:blue')
 v = axes[0].axis()
-
-# Plot perfect prediction line: y_hat = y (diagonal)
-# Points on this line indicate perfect predictions
-axes[0].plot([v[0], v[1]], [v[0], v[1]], 'r-', linewidth=2, label='Perfect prediction')
-
-# Add labels and title
-axes[0].set_xlabel(r'True Total UPDRS ($y$)', fontsize=11)
-axes[0].set_ylabel(r'Predicted Total UPDRS ($\hat{y}$)', fontsize=11)
-axes[0].set_title(f'Training Set (K={K_opt}, R²={R2_train_final:.3f})', fontsize=12)
-
-# Add legend, grid, and make axes square
+axes[0].plot([v[0], v[1]], [v[0], v[1]], 'r-', linewidth=2, 
+             label='Perfect (y=ŷ)')
+y_fit = slope * y_test + intercept
+axes[0].plot(y_test, y_fit, 'g--', linewidth=2, alpha=0.7,
+             label=f'Fit: ŷ={slope:.2f}y+{intercept:.2f}')
+axes[0].set_xlabel('True Total UPDRS (y)', fontsize=11)
+axes[0].set_ylabel('Predicted Total UPDRS (ŷ)', fontsize=11)
+axes[0].set_title(f'K-NN Local LLS (K={K_opt})\nR²={r_squared:.3f}, Corr={corr_coef:.3f}', 
+                  fontsize=12)
 axes[0].legend(fontsize=10)
 axes[0].grid(alpha=0.3)
-axes[0].axis('square')  # Equal aspect ratio for better visualization
+axes[0].axis('square')
 
-# --- Validation Set Plot ---
-axes[1].plot(y_val, y_hat_val_final, 'o', alpha=0.5, label='K-NN LLS predictions', color='green')
+axes[1].scatter(y_test, y_hat_test_lls, alpha=0.5, s=30, 
+                label='Predictions', color='tab:orange')
 v = axes[1].axis()
-axes[1].plot([v[0], v[1]], [v[0], v[1]], 'r-', linewidth=2, label='Perfect prediction')
-axes[1].set_xlabel(r'True Total UPDRS ($y$)', fontsize=11)
-axes[1].set_ylabel(r'Predicted Total UPDRS ($\hat{y}$)', fontsize=11)
-axes[1].set_title(f'Validation Set (K={K_opt}, R²={R2_val_final:.3f})', fontsize=12)
+axes[1].plot([v[0], v[1]], [v[0], v[1]], 'r-', linewidth=2, 
+             label='Perfect (y=ŷ)')
+y_fit_lls = slope_lls * y_test + intercept_lls
+axes[1].plot(y_test, y_fit_lls, 'g--', linewidth=2, alpha=0.7,
+             label=f'Fit: ŷ={slope_lls:.2f}y+{intercept_lls:.2f}')
+axes[1].set_xlabel('True Total UPDRS (y)', fontsize=11)
+axes[1].set_ylabel('Predicted Total UPDRS (ŷ)', fontsize=11)
+axes[1].set_title(f'Standard LLS\nR²={R2_lls:.3f}, Corr={corr_coef_lls:.3f}', 
+                  fontsize=12)
 axes[1].legend(fontsize=10)
 axes[1].grid(alpha=0.3)
 axes[1].axis('square')
 
-# --- Test Set Plot ---
-# This is the most important plot: unbiased performance estimate
-axes[2].plot(y_test, y_hat_test_final, 'o', alpha=0.5, label='K-NN LLS predictions', color='orange')
-v = axes[2].axis()
-axes[2].plot([v[0], v[1]], [v[0], v[1]], 'r-', linewidth=2, label='Perfect prediction')
-axes[2].set_xlabel(r'True Total UPDRS ($y$)', fontsize=11)
-axes[2].set_ylabel(r'Predicted Total UPDRS ($\hat{y}$)', fontsize=11)
-axes[2].set_title(f'Test Set (K={K_opt}, R²={R2_test_final:.3f})', fontsize=12)
-axes[2].legend(fontsize=10)
-axes[2].grid(alpha=0.3)
-axes[2].axis('square')
-
-# Adjust layout to prevent overlapping labels
 plt.tight_layout()
+plt.savefig('./pictures/predictions_comparison.png', dpi=300)
 
-# Save figure to file
-plt.savefig('./pictures/predictions_knn_lls.png', dpi=300)
-
-# Display all figures
 plt.show()
+
+# =============================================================================
+# KEY INSIGHTS SUMMARY
+# =============================================================================
+print("\n" + "=" * 80)
+print("KEY INSIGHTS:")
+print("=" * 80)
+
+# Calculate improvement metrics
+mse_improvement = ((mse_lls - mse) / mse_lls) * 100
+
+if mse < mse_lls:
+    print(f"✓ K-NN Local LLS outperforms Standard LLS")
+    print(f"  MSE Reduction: {mse_improvement:.2f}%")
+else:
+    print(f"✗ Standard LLS outperforms K-NN Local LLS")
+    print(f"  MSE Increase: {-mse_improvement:.2f}%")
+
+print(f"\nK-NN Local LLS: K={K_opt}, R²={r_squared:.3f}")
+print(f"Standard LLS:   R²={R2_lls:.3f}")
+
+print("\n" + "=" * 80)
+
+plt.show()
+
+# =============================================================================
+# POINT 5 (EXAM): DETAILED STATISTICS FOR TRAINING SET (K-NN LOCAL LLS)
+# =============================================================================
+# This allows us to check for overfitting by comparing train error to test error
+
+print("\n" + "=" * 80)
+print(f"PERFORMANCE METRICS FOR TRAINING DATASET (K-NN LLS with K={K_opt})")
+print("=" * 80)
+
+# Basic error statistics
+mean_error_train = np.mean(E_train_final)
+print(f"Mean Error: {mean_error_train:.3f}")
+
+std_error_train = np.std(E_train_final)
+print(f"Standard Deviation of Errors: {std_error_train:.3f}")
+
+mse_train = np.mean(E_train_final**2)
+print(f"Mean Squared Error (MSE): {mse_train:.3f}")
+
+rmse_train = np.sqrt(mse_train)
+print(f"Root Mean Squared Error (RMSE): {rmse_train:.3f}")
+
+# Correlation and determination coefficients
+corr_coef_train = np.corrcoef(y_train, y_hat_train_final)[0, 1]
+print(f"Correlation Coefficient: {corr_coef_train:.3f}")
+
+# R^2 = 1 - [MSE / np.var(y_train)]
+r_squared_train = 1 - mse_train / np.var(y_train)
+print(f"R² (Coefficient of Determination): {r_squared_train:.3f}")
+
+# Regression line for predicted vs true values
+slope_train, intercept_train = np.polyfit(y_train, y_hat_train_final, 1)
+print(f"Regression Line: slope = {slope_train:.3f}, intercept = {intercept_train:.3f}")
+print("=" * 80)

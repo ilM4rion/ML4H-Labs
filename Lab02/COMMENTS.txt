@@ -1,0 +1,17 @@
+================================================================================
+COMPARISON: K-NN LOCAL LLS vs STANDARD LLS
+================================================================================
+               K-NN Local LLS  Standard LLS  Difference
+Mean Error              0.026        -0.308       0.334
+Std Dev Error           2.428         3.695      -1.267
+MSE                     5.898        13.750      -7.852
+RMSE                    2.429         3.708      -1.280
+Correlation             0.974         0.939       0.035
+R²                      0.949         0.880       0.068
+Slope                   0.972         0.900       0.071
+Intercept               0.781         3.153      -2.372
+================================================================================
+
+
+It is possible to notice, before commenting the plots that the method that implements KNN and LLS is more precise.
+The MSE of the Standard LLS is almost 3 times the value of the KNN+LLS. The Standard Deviation is also lower in the second case.
